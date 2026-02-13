@@ -108,7 +108,15 @@ public class ResxService
 
             if (existingData is not null)
             {
-                existingData.Element("value")!.Value = value;
+                var valueElement = existingData.Element("value");
+                if (valueElement is not null)
+                {
+                    valueElement.Value = value;
+                }
+                else
+                {
+                    existingData.Add(new XElement("value", value));
+                }
             }
             else
             {
