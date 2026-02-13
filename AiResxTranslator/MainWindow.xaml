@@ -89,6 +89,8 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!-- Settings Panel -->
@@ -102,6 +104,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -140,11 +143,20 @@
                              Margin="0,0,0,6" IsEnabled="{Binding IsNotBusy}" />
 
                     <!-- Model -->
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Model:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Model:" VerticalAlignment="Center" Margin="0,0,8,6" />
                     <ComboBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
                               ItemsSource="{Binding AvailableModels}"
                               SelectedItem="{Binding SelectedModel}"
-                              IsEnabled="{Binding IsNotBusy}" />
+                              IsEnabled="{Binding IsNotBusy}"
+                              Margin="0,0,0,6" />
+
+                    <!-- Batch Size -->
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Batch Size:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <mah:NumericUpDown Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2"
+                                       Value="{Binding BatchSize, UpdateSourceTrigger=PropertyChanged}"
+                                       Minimum="1" Maximum="500" Interval="5"
+                                       IsEnabled="{Binding IsNotBusy}"
+                                       mah:TextBoxHelper.Watermark="Entries per batch" />
                 </Grid>
             </GroupBox>
 
@@ -185,7 +197,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Language Files Panel -->
-                <GroupBox Grid.Column="0" Header="Language Files" Padding="4"
+                <GroupBox Grid.Column="0" Header="{Binding LanguageFilesHeader}" Padding="4"
                           mah:HeaderedControlHelper.HeaderFontSize="14"
                           mah:HeaderedControlHelper.HeaderFontWeight="SemiBold">
                     <Grid>

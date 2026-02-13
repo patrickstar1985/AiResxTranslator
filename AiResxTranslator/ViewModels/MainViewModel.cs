@@ -26,6 +26,8 @@ public class MainViewModel : INotifyPropertyChanged
     private double _progressMax = 100;
     private bool _selectAllMissing = true;
     private CultureInfo? _selectedNewCulture;
+    private int _batchSize = 50;
+    private string _languageFilesHeader = "Language Files";
 
     public MainViewModel()
     {
@@ -33,6 +35,7 @@ public class MainViewModel : INotifyPropertyChanged
         _folderPath = _settingsService.LoadFolderPath() ?? string.Empty;
         _anchorFileName = _settingsService.LoadAnchorFileName() ?? "Strings.resx";
         _selectedModel = _settingsService.LoadSelectedModel() ?? "gpt-4o-mini";
+        _batchSize = _settingsService.LoadBatchSize();
 
         ScanCommand = new RelayCommand(async () => await ScanAsync(), () => !IsBusy && !string.IsNullOrWhiteSpace(FolderPath));
         TranslateCommand = new RelayCommand(async () => await TranslateAsync(), () => !IsBusy && MissingTranslations.Count > 0);
@@ -84,6 +87,23 @@ public class MainViewModel : INotifyPropertyChanged
             _settingsService.SaveSelectedModel(value);
             OnPropertyChanged();
         }
+    }
+
+    public int BatchSize
+    {
+        get => _batchSize;
+        set
+        {
+            _batchSize = value < 1 ? 1 : value;
+            _settingsService.SaveBatchSize(_batchSize);
+            OnPropertyChanged();
+        }
+    }
+
+    public string LanguageFilesHeader
+    {
+        get => _languageFilesHeader;
+        set { _languageFilesHeader = value; OnPropertyChanged(); }
     }
 
     public List<string> AvailableModels { get; } =
@@ -228,6 +248,7 @@ public class MainViewModel : INotifyPropertyChanged
         StatusText = "Scanning...";
         LanguageFiles.Clear();
         MissingTranslations.Clear();
+        LanguageFilesHeader = "Language Files";
 
         try
         {
@@ -246,6 +267,7 @@ public class MainViewModel : INotifyPropertyChanged
                 });
             });
 
+            LanguageFilesHeader = $"Language Files ({LanguageFiles.Count})";
             StatusText = $"Found {LanguageFiles.Count} language file(s), {MissingTranslations.Count} missing translation(s).";
             RefreshAvailableCultures();
         }
@@ -294,7 +316,7 @@ public class MainViewModel : INotifyPropertyChanged
             .GroupBy(m => m.TargetLanguageFile)
             .ToList();
 
-        ProgressMax = grouped.Count;
+        ProgressMax = selectedMissing.Count;
 
         var translationService = new TranslationService(ApiKey, SelectedModel);
         var totalTranslated = 0;
@@ -310,13 +332,11 @@ public class MainViewModel : INotifyPropertyChanged
 
                 var keysAndValues = group.ToDictionary(m => m.Key, m => m.AnchorValue);
 
-                // Batch in chunks of 50 to avoid token limits
+                // Batch in chunks using configured batch size
                 var chunks = keysAndValues
-                    .Chunk(50)
+                    .Chunk(BatchSize)
                     .Select(c => c.ToDictionary(kv => kv.Key, kv => kv.Value))
                     .ToList();
-
-                var allTranslations = new Dictionary<string, string>();
 
                 foreach (var chunk in chunks)
                 {
@@ -325,28 +345,26 @@ public class MainViewModel : INotifyPropertyChanged
                     var translations = await translationService.TranslateBatchAsync(
                         chunk, langFile.CultureCode, _cts.Token);
 
-                    foreach (var kv in translations)
-                        allTranslations[kv.Key] = kv.Value;
-                }
+                    // Write each batch immediately to the resx file
+                    _resxService.WriteTranslationsToResx(group.Key, translations);
 
-                // Write to resx file
-                _resxService.WriteTranslationsToResx(group.Key, allTranslations);
-                totalTranslated += allTranslations.Count;
+                    totalTranslated += translations.Count;
+                    ProgressValue += translations.Count;
+                    StatusText = $"Translating {langFile.DisplayName}... ({totalTranslated}/{selectedMissing.Count})";
 
-                // Update UI - mark translated items
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    foreach (var m in group)
+                    // Update UI immediately per batch
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        if (allTranslations.TryGetValue(m.Key, out var translated))
+                        foreach (var m in group)
                         {
-                            m.TranslatedValue = translated;
+                            if (translations.TryGetValue(m.Key, out var translated))
+                            {
+                                m.TranslatedValue = translated;
+                            }
                         }
-                    }
-                    langFile.MissingCount -= allTranslations.Count;
-                });
-
-                ProgressValue++;
+                        langFile.MissingCount -= translations.Count;
+                    });
+                }
             }
 
             StatusText = $"Done! Translated {totalTranslated} string(s) across {grouped.Count} language file(s).";

@@ -5,12 +5,18 @@ namespace AiResxTranslator.Models;
 public class MissingTranslation : INotifyPropertyChanged
 {
     private bool _isSelected = true;
+    private string? _translatedValue;
 
     public string Key { get; init; } = string.Empty;
     public string AnchorValue { get; init; } = string.Empty;
     public string TargetLanguageFile { get; init; } = string.Empty;
     public string TargetCultureCode { get; init; } = string.Empty;
-    public string? TranslatedValue { get; set; }
+
+    public string? TranslatedValue
+    {
+        get => _translatedValue;
+        set { _translatedValue = value; OnPropertyChanged(nameof(TranslatedValue)); }
+    }
 
     public bool IsSelected
     {

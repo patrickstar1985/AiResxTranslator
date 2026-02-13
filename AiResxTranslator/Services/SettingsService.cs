@@ -55,4 +55,17 @@ public class SettingsService
         using var key = Registry.CurrentUser.CreateSubKey(RegistryKeyPath);
         key.SetValue("SelectedModel", model);
     }
+
+    public int LoadBatchSize()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(RegistryKeyPath);
+        var value = key?.GetValue("BatchSize");
+        return value is int i and > 0 ? i : 50;
+    }
+
+    public void SaveBatchSize(int batchSize)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(RegistryKeyPath);
+        key.SetValue("BatchSize", batchSize, RegistryValueKind.DWord);
+    }
 }

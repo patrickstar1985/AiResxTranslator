@@ -9,13 +9,17 @@ A WPF desktop application that uses OpenAI to automatically translate .NET `.res
 ## Features
 
 - **Automatic scanning** — Detects all culture-specific `.resx` files relative to an anchor file (e.g., `Strings.resx`) and identifies missing translation keys.
-- **Batch translation** — Translates multiple keys at once using the OpenAI Chat API, grouped by target language file with chunking to stay within token limits.
+- **Batch translation** — Translates multiple keys at once using the OpenAI Chat API, grouped by target language file.
+- **Configurable batch size** — Adjust the number of entries per API request (default: 50) to optimize for large translation files or API token limits.
+- **Incremental saving** — Each translated batch is immediately written to the `.resx` file, so progress is preserved even if the translation is cancelled or interrupted mid-way. A subsequent scan will only pick up the remaining untranslated keys.
+- **Per-entry progress tracking** — The progress bar and status text update based on individual translated entries, not just language files, giving accurate feedback for large translation runs.
 - **Multiple OpenAI models** — Choose between `gpt-4o-mini`, `gpt-4o`, `gpt-4.1-nano`, `gpt-4.1-mini`, and `gpt-4.1`.
 - **Selective translation** — Pick which language files and individual keys to translate before running.
+- **Create new language files** — Add new culture-specific `.resx` files directly from the UI by selecting from a list of available cultures.
 - **Direct .resx writing** — Translated strings are written back into the `.resx` files, ready to use.
-- **Persistent settings** — API key, folder path, anchor file name, and selected model are saved to the Windows Registry and restored on next launch.
+- **Persistent settings** — API key, folder path, anchor file name, selected model, and batch size are saved to the Windows Registry and restored on next launch.
 - **Modern UI** — Built with [MahApps.Metro](https://github.com/MahApps/MahApps.Metro) for a clean, modern look with Material Design icons.
-- **Cancellation support** — Long-running translations can be cancelled at any time.
+- **Cancellation support** — Long-running translations can be cancelled at any time. Already translated batches remain saved in the `.resx` files.
 
 ## Prerequisites
 
@@ -47,18 +51,20 @@ Or open `AiResxTranslator.sln` in Visual Studio 2022 and press **F5**.
 2. **Browse to the folder** containing your `.resx` resource files.
 3. **Set the anchor file name** — this is your base/English resource file (default: `Strings.resx`). The tool looks for matching culture-specific files like `Strings.de.resx`, `Strings.fr.resx`, etc.
 4. **Select the AI model** you want to use for translation.
-5. Click **Scan for Missing Translations** to discover which keys are missing in each language file.
-6. **Select/deselect** language files and individual translation entries as needed.
-7. Click **Translate Selected** to start the AI-powered translation.
-8. Translated values are displayed in the grid and **automatically written** to the corresponding `.resx` files.
+5. **Adjust the batch size** if needed — smaller batches reduce the risk of token limit issues, larger batches reduce the number of API calls.
+6. Click **Scan for Missing Translations** to discover which keys are missing in each language file.
+7. **Select/deselect** language files and individual translation entries as needed.
+8. Optionally, **create a new language file** by selecting a culture from the dropdown and clicking **Create**.
+9. Click **Translate Selected** to start the AI-powered translation.
+10. Translated values are displayed in the grid and **immediately written** to the corresponding `.resx` files after each batch. You can safely cancel and resume later — only untranslated keys will be picked up on the next scan.
 
 ## How It Works
 
 The application uses a straightforward approach:
 
 1. **Scan** — Reads all `<data>` entries from the anchor `.resx` file, discovers culture-specific variants (e.g., `Strings.de.resx`), and compares keys to find missing translations.
-2. **Translate** — Sends batches of up to 50 key-value pairs to the OpenAI Chat API with a system prompt instructing it to return a JSON object with translated values while preserving format placeholders like `{0}`, `{1}`, etc.
-3. **Write** — Merges translated entries back into the target `.resx` files, adding new `<data>` elements or updating existing ones.
+2. **Translate** — Sends batches of key-value pairs (configurable batch size, default 50) to the OpenAI Chat API with a system prompt instructing it to return a JSON object with translated values while preserving format placeholders like `{0}`, `{1}`, etc.
+3. **Write** — After each batch, merges translated entries back into the target `.resx` files, adding new `<data>` elements or updating existing ones. This ensures no progress is lost on cancellation or errors.
 
 ## Project Structure
 
