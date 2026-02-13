@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -24,6 +25,7 @@ public class MainViewModel : INotifyPropertyChanged
     private double _progressValue;
     private double _progressMax = 100;
     private bool _selectAllMissing = true;
+    private CultureInfo? _selectedNewCulture;
 
     public MainViewModel()
     {
@@ -37,6 +39,7 @@ public class MainViewModel : INotifyPropertyChanged
         CancelCommand = new RelayCommand(Cancel, () => IsBusy);
         BrowseFolderCommand = new RelayCommand(BrowseFolder);
         SelectAllMissingCommand = new RelayCommand(ToggleSelectAllMissing);
+        CreateLanguageFileCommand = new RelayCommand(CreateLanguageFile, () => !IsBusy && SelectedNewCulture is not null && !string.IsNullOrWhiteSpace(FolderPath));
     }
 
     public string ApiKey
@@ -130,6 +133,14 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    public CultureInfo? SelectedNewCulture
+    {
+        get => _selectedNewCulture;
+        set { _selectedNewCulture = value; OnPropertyChanged(); }
+    }
+
+    public ObservableCollection<CultureInfo> AvailableCultures { get; } = [];
+
     public ObservableCollection<LanguageFile> LanguageFiles { get; } = [];
     public ObservableCollection<MissingTranslation> MissingTranslations { get; } = [];
 
@@ -138,6 +149,7 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand CancelCommand { get; }
     public ICommand BrowseFolderCommand { get; }
     public ICommand SelectAllMissingCommand { get; }
+    public ICommand CreateLanguageFileCommand { get; }
 
     private void BrowseFolder()
     {
@@ -158,6 +170,43 @@ public class MainViewModel : INotifyPropertyChanged
     private void ToggleSelectAllMissing()
     {
         SelectAllMissing = !SelectAllMissing;
+    }
+
+    private void RefreshAvailableCultures()
+    {
+        AvailableCultures.Clear();
+        SelectedNewCulture = null;
+
+        if (!Directory.Exists(FolderPath))
+            return;
+
+        var anchorPath = Path.Combine(FolderPath, AnchorFileName);
+        if (!File.Exists(anchorPath))
+            return;
+
+        var cultures = _resxService.GetAvailableCultures(FolderPath, AnchorFileName);
+        foreach (var culture in cultures)
+            AvailableCultures.Add(culture);
+    }
+
+    private void CreateLanguageFile()
+    {
+        if (SelectedNewCulture is null || string.IsNullOrWhiteSpace(FolderPath))
+            return;
+
+        try
+        {
+            var newFilePath = _resxService.CreateLanguageFile(FolderPath, AnchorFileName, SelectedNewCulture.Name);
+            StatusText = $"Created new language file: {Path.GetFileName(newFilePath)}";
+            RefreshAvailableCultures();
+
+            // Re-scan to pick up the new file
+            _ = ScanAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Error creating language file: {ex.Message}";
+        }
     }
 
     private async Task ScanAsync()
@@ -198,6 +247,7 @@ public class MainViewModel : INotifyPropertyChanged
             });
 
             StatusText = $"Found {LanguageFiles.Count} language file(s), {MissingTranslations.Count} missing translation(s).";
+            RefreshAvailableCultures();
         }
         catch (Exception ex)
         {

@@ -188,21 +188,58 @@
                 <GroupBox Grid.Column="0" Header="Language Files" Padding="4"
                           mah:HeaderedControlHelper.HeaderFontSize="14"
                           mah:HeaderedControlHelper.HeaderFontWeight="SemiBold">
-                    <ListView ItemsSource="{Binding LanguageFiles}" SelectionMode="Single">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="2">
-                                    <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                                    <iconPacks:PackIconMaterial Kind="FileDocument" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,6,0"
-                                                                Foreground="{DynamicResource MahApps.Brushes.Accent}" />
-                                    <TextBlock VerticalAlignment="Center">
-                                        <Run Text="{Binding DisplayName, Mode=OneWay}" />
-                                        <Run Text=" (" /><Run Text="{Binding MissingCount, Mode=OneWay}" /><Run Text=" missing)" Foreground="OrangeRed" />
-                                    </TextBlock>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <ListView Grid.Row="0" ItemsSource="{Binding LanguageFiles}" SelectionMode="Single">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="2">
+                                        <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                        <iconPacks:PackIconMaterial Kind="FileDocument" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                                    Foreground="{DynamicResource MahApps.Brushes.Accent}" />
+                                        <TextBlock VerticalAlignment="Center">
+                                            <Run Text="{Binding DisplayName, Mode=OneWay}" />
+                                            <Run Text=" (" /><Run Text="{Binding MissingCount, Mode=OneWay}" /><Run Text=" missing)" Foreground="OrangeRed" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <!-- Create New Language File -->
+                        <StackPanel Grid.Row="1" Margin="0,8,0,0">
+                            <TextBlock Text="Create New Language File:" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <ComboBox ItemsSource="{Binding AvailableCultures}"
+                                      SelectedItem="{Binding SelectedNewCulture}"
+                                      IsEnabled="{Binding IsNotBusy}"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="True"
+                                      mah:TextBoxHelper.Watermark="Select culture..."
+                                      Margin="0,0,0,4">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock>
+                                            <Run Text="{Binding EnglishName, Mode=OneWay}" />
+                                            <Run Text=" (" /><Run Text="{Binding Name, Mode=OneWay}" /><Run Text=")" />
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Command="{Binding CreateLanguageFileCommand}"
+                                    IsEnabled="{Binding IsNotBusy}"
+                                    Style="{DynamicResource MahApps.Styles.Button.Square.Accent}"
+                                    Padding="8,4">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="FilePlus" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                    <TextBlock Text="Create" VerticalAlignment="Center" />
                                 </StackPanel>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
                 </GroupBox>
 
                 <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center"

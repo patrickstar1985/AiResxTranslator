@@ -77,7 +77,7 @@ public class ResxService
 
             foreach (var (key, value) in anchorEntries)
             {
-                if (!existingEntries.ContainsKey(key))
+                if (!existingEntries.TryGetValue(key, out var existingValue) || string.IsNullOrWhiteSpace(existingValue))
                 {
                     missingCount++;
                     missing.Add(new MissingTranslation
@@ -121,5 +121,61 @@ public class ResxService
         }
 
         doc.Save(filePath);
+    }
+
+    public string CreateLanguageFile(string directoryPath, string anchorFileName, string cultureCode)
+    {
+        var anchorBaseName = Path.GetFileNameWithoutExtension(anchorFileName);
+        var newFileName = $"{anchorBaseName}.{cultureCode}.resx";
+        var newFilePath = Path.Combine(directoryPath, newFileName);
+
+        if (File.Exists(newFilePath))
+            throw new InvalidOperationException($"The file '{newFileName}' already exists.");
+
+        var anchorPath = Path.Combine(directoryPath, anchorFileName);
+        var anchorEntries = ReadResxEntries(anchorPath);
+
+        var doc = new XDocument(
+            new XDeclaration("1.0", "utf-8", null),
+            new XElement("root")
+        );
+
+        var root = doc.Root!;
+
+        // Add standard resx headers
+        root.Add(new XElement("resheader",
+            new XAttribute("name", "resmimetype"),
+            new XElement("value", "text/microsoft-resx")));
+        root.Add(new XElement("resheader",
+            new XAttribute("name", "version"),
+            new XElement("value", "2.0")));
+        root.Add(new XElement("resheader",
+            new XAttribute("name", "reader"),
+            new XElement("value", "System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")));
+        root.Add(new XElement("resheader",
+            new XAttribute("name", "writer"),
+            new XElement("value", "System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")));
+
+        // Add all keys with empty values
+        foreach (var (key, _) in anchorEntries)
+        {
+            root.Add(new XElement("data",
+                new XAttribute("name", key),
+                new XAttribute(XNamespace.Xml + "space", "preserve")));
+        }
+
+        doc.Save(newFilePath);
+        return newFilePath;
+    }
+
+    public List<CultureInfo> GetAvailableCultures(string directoryPath, string anchorFileName)
+    {
+        var existingFiles = DiscoverLanguageFiles(directoryPath, anchorFileName);
+        var existingCultures = new HashSet<string>(existingFiles.Select(f => f.CultureCode), StringComparer.OrdinalIgnoreCase);
+
+        return CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+            .Where(c => !existingCultures.Contains(c.Name))
+            .OrderBy(c => c.EnglishName)
+            .ToList();
     }
 }
