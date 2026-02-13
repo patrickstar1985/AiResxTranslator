@@ -1,157 +1,250 @@
-﻿<Window x:Class="AiResxTranslator.MainWindow"
+﻿<mah:MetroWindow x:Class="AiResxTranslator.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:vm="clr-namespace:AiResxTranslator.ViewModels"
         xmlns:conv="clr-namespace:AiResxTranslator.Converters"
         mc:Ignorable="d"
         Title="AI Resx Translator" Height="700" Width="1000" MinWidth="800" MinHeight="500"
-        WindowStartupLocation="CenterScreen">
-    <Window.DataContext>
+        WindowStartupLocation="CenterScreen"
+        GlowBrush="{DynamicResource MahApps.Brushes.Accent}"
+        TitleCharacterCasing="Normal"
+        BorderThickness="1">
+    <mah:MetroWindow.DataContext>
         <vm:MainViewModel />
-    </Window.DataContext>
-    <Window.Resources>
+    </mah:MetroWindow.DataContext>
+    <mah:MetroWindow.Resources>
         <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
         <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
-    </Window.Resources>
-    <Grid Margin="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    </mah:MetroWindow.Resources>
 
-        <!-- Settings Panel -->
-        <GroupBox Grid.Row="0" Header="Settings" Padding="8" Margin="0,0,0,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+    <!-- Left Window Commands with icon -->
+    <mah:MetroWindow.LeftWindowCommands>
+        <mah:WindowCommands>
+            <Button ToolTip="AI Resx Translator">
+                <iconPacks:PackIconMaterial Kind="Translate" Width="18" Height="18" />
+            </Button>
+        </mah:WindowCommands>
+    </mah:MetroWindow.LeftWindowCommands>
 
-                <!-- API Key -->
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="OpenAI API Key:" VerticalAlignment="Center" Margin="0,0,8,6" />
-                <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
-                         Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="0,0,0,6" IsEnabled="{Binding IsNotBusy}" />
-
-                <!-- Folder Path -->
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Resource Folder:" VerticalAlignment="Center" Margin="0,0,8,6" />
-                <TextBox Grid.Row="1" Grid.Column="1"
-                         Text="{Binding FolderPath, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="0,0,8,6" IsEnabled="{Binding IsNotBusy}" />
-                <Button Grid.Row="1" Grid.Column="2" Content="Browse..." Padding="12,2"
-                        Command="{Binding BrowseFolderCommand}" Margin="0,0,0,6"
-                        IsEnabled="{Binding IsNotBusy}" />
-
-                <!-- Anchor File Name -->
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Anchor File:" VerticalAlignment="Center" Margin="0,0,8,6" />
-                <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
-                         Text="{Binding AnchorFileName, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="0,0,0,6" IsEnabled="{Binding IsNotBusy}" />
-
-                <!-- Model -->
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Model:" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <ComboBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
-                          ItemsSource="{Binding AvailableModels}"
-                          SelectedItem="{Binding SelectedModel}"
-                          IsEnabled="{Binding IsNotBusy}" />
-            </Grid>
-        </GroupBox>
-
-        <!-- Action Buttons -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
-            <Button Content="Scan for Missing Translations" Padding="16,6"
-                    Command="{Binding ScanCommand}" Margin="0,0,8,0" />
-            <Button Content="Translate Selected" Padding="16,6"
-                    Command="{Binding TranslateCommand}" Margin="0,0,8,0" />
-            <Button Content="Cancel" Padding="16,6"
-                    Command="{Binding CancelCommand}"
-                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
-        </StackPanel>
+    <DockPanel LastChildFill="True">
+        <!-- Status Bar at the bottom -->
+        <StatusBar DockPanel.Dock="Bottom"
+                   Background="{DynamicResource MahApps.Brushes.Accent}"
+                   Foreground="White"
+                   MinHeight="28">
+            <StatusBarItem Margin="4,0">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="InformationOutline" Width="14" Height="14"
+                                                VerticalAlignment="Center" Margin="0,0,6,0"
+                                                Foreground="White" />
+                    <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" Foreground="White" />
+                </StackPanel>
+            </StatusBarItem>
+            <Separator Style="{DynamicResource MahApps.Styles.Separator.StatusBar}" />
+            <StatusBarItem HorizontalAlignment="Right" Margin="4,0"
+                           Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal">
+                    <mah:MetroProgressBar Width="200" Height="16" Margin="0,0,8,0"
+                                          Value="{Binding ProgressValue}" Maximum="{Binding ProgressMax}"
+                                          Foreground="White" Background="#66FFFFFF" />
+                    <iconPacks:PackIconMaterial Kind="Loading" Width="14" Height="14"
+                                                VerticalAlignment="Center"
+                                                Foreground="White"
+                                                RenderTransformOrigin="0.5,0.5">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform x:Name="SpinTransform" />
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                        <iconPacks:PackIconMaterial.Style>
+                            <Style TargetType="iconPacks:PackIconMaterial">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard x:Name="SpinStoryboard">
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                                     From="0" To="360" Duration="0:0:1"
+                                                                     RepeatBehavior="Forever" />
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions>
+                                            <StopStoryboard BeginStoryboardName="SpinStoryboard" />
+                                        </DataTrigger.ExitActions>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </iconPacks:PackIconMaterial.Style>
+                    </iconPacks:PackIconMaterial>
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
 
         <!-- Main Content -->
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="250" MinWidth="180" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        <Grid Margin="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-            <!-- Language Files Panel -->
-            <GroupBox Grid.Column="0" Header="Language Files" Padding="4">
-                <ListView ItemsSource="{Binding LanguageFiles}" SelectionMode="Single">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="2">
-                                <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                                <TextBlock VerticalAlignment="Center">
-                                    <Run Text="{Binding DisplayName, Mode=OneWay}" />
-                                    <Run Text=" (" /><Run Text="{Binding MissingCount, Mode=OneWay}" /><Run Text=" missing)" Foreground="OrangeRed" />
-                                </TextBlock>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </GroupBox>
-
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center"
-                          VerticalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
-
-            <!-- Missing Translations Panel -->
-            <GroupBox Grid.Column="2" Header="Missing Translations" Padding="4">
+            <!-- Settings Panel -->
+            <GroupBox Grid.Row="0" Header="Settings" Padding="8" Margin="0,0,0,8"
+                      mah:HeaderedControlHelper.HeaderFontSize="14"
+                      mah:HeaderedControlHelper.HeaderFontWeight="SemiBold">
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <CheckBox Grid.Row="0" Content="Select / Deselect All" Margin="4,2,0,4"
-                              IsChecked="{Binding SelectAllMissing}"
-                              IsEnabled="{Binding IsNotBusy}" />
+                    <!-- API Key -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="OpenAI API Key:" VerticalAlignment="Center" Margin="0,0,8,6" />
+                    <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                             Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}"
+                             mah:TextBoxHelper.Watermark="Enter your OpenAI API key..."
+                             mah:TextBoxHelper.ClearTextButton="True"
+                             Margin="0,0,0,6" IsEnabled="{Binding IsNotBusy}" />
 
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding MissingTranslations}"
-                              AutoGenerateColumns="False" IsReadOnly="False"
-                              CanUserAddRows="False" CanUserDeleteRows="False"
-                              SelectionMode="Single" GridLinesVisibility="Horizontal"
-                              HeadersVisibility="Column" AlternatingRowBackground="#F5F5F5">
-                        <DataGrid.Columns>
-                            <DataGridCheckBoxColumn Header="✓" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="35" />
-                            <DataGridTextColumn Header="Key" Binding="{Binding Key}" Width="180" IsReadOnly="True" />
-                            <DataGridTextColumn Header="English Value" Binding="{Binding AnchorValue}" Width="200" IsReadOnly="True" />
-                            <DataGridTextColumn Header="Language" Binding="{Binding TargetCultureCode}" Width="80" IsReadOnly="True" />
-                            <DataGridTextColumn Header="Translated" Binding="{Binding TranslatedValue}" Width="*" IsReadOnly="True">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="Green" />
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <!-- Folder Path -->
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Resource Folder:" VerticalAlignment="Center" Margin="0,0,8,6" />
+                    <TextBox Grid.Row="1" Grid.Column="1"
+                             Text="{Binding FolderPath, UpdateSourceTrigger=PropertyChanged}"
+                             mah:TextBoxHelper.Watermark="Path to resource files..."
+                             Margin="0,0,8,6" IsEnabled="{Binding IsNotBusy}" />
+                    <Button Grid.Row="1" Grid.Column="2" Padding="12,2"
+                            Command="{Binding BrowseFolderCommand}" Margin="0,0,0,6"
+                            IsEnabled="{Binding IsNotBusy}"
+                            Style="{DynamicResource MahApps.Styles.Button.Square.Accent}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Kind="FolderOpen" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBlock Text="Browse..." VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Anchor File Name -->
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Anchor File:" VerticalAlignment="Center" Margin="0,0,8,6" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                             Text="{Binding AnchorFileName, UpdateSourceTrigger=PropertyChanged}"
+                             mah:TextBoxHelper.Watermark="e.g. Strings.resx"
+                             Margin="0,0,0,6" IsEnabled="{Binding IsNotBusy}" />
+
+                    <!-- Model -->
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Model:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <ComboBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
+                              ItemsSource="{Binding AvailableModels}"
+                              SelectedItem="{Binding SelectedModel}"
+                              IsEnabled="{Binding IsNotBusy}" />
                 </Grid>
             </GroupBox>
-        </Grid>
 
-        <!-- Status Bar -->
-        <Grid Grid.Row="3" Margin="0,8,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="{Binding StatusText}" VerticalAlignment="Center" />
-            <ProgressBar Grid.Column="1" Width="200" Height="18" Margin="8,0,0,0"
-                         Value="{Binding ProgressValue}" Maximum="{Binding ProgressMax}"
-                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+            <!-- Action Buttons -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                <Button Padding="16,6"
+                        Command="{Binding ScanCommand}" Margin="0,0,8,0"
+                        Style="{DynamicResource MahApps.Styles.Button.Square.Accent}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="Magnify" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBlock Text="Scan for Missing Translations" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Padding="16,6"
+                        Command="{Binding TranslateCommand}" Margin="0,0,8,0"
+                        Style="{DynamicResource MahApps.Styles.Button.Square.Accent}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="Translate" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBlock Text="Translate Selected" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Padding="16,6"
+                        Command="{Binding CancelCommand}"
+                        Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="Cancel" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBlock Text="Cancel" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <!-- Main Content Area -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="250" MinWidth="180" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Language Files Panel -->
+                <GroupBox Grid.Column="0" Header="Language Files" Padding="4"
+                          mah:HeaderedControlHelper.HeaderFontSize="14"
+                          mah:HeaderedControlHelper.HeaderFontWeight="SemiBold">
+                    <ListView ItemsSource="{Binding LanguageFiles}" SelectionMode="Single">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="2">
+                                    <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                    <iconPacks:PackIconMaterial Kind="FileDocument" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                                Foreground="{DynamicResource MahApps.Brushes.Accent}" />
+                                    <TextBlock VerticalAlignment="Center">
+                                        <Run Text="{Binding DisplayName, Mode=OneWay}" />
+                                        <Run Text=" (" /><Run Text="{Binding MissingCount, Mode=OneWay}" /><Run Text=" missing)" Foreground="OrangeRed" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </GroupBox>
+
+                <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center"
+                              VerticalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
+
+                <!-- Missing Translations Panel -->
+                <GroupBox Grid.Column="2" Header="Missing Translations" Padding="4"
+                          mah:HeaderedControlHelper.HeaderFontSize="14"
+                          mah:HeaderedControlHelper.HeaderFontWeight="SemiBold">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <CheckBox Grid.Row="0" Content="Select / Deselect All" Margin="4,2,0,4"
+                                  IsChecked="{Binding SelectAllMissing}"
+                                  IsEnabled="{Binding IsNotBusy}" />
+
+                        <DataGrid Grid.Row="1" ItemsSource="{Binding MissingTranslations}"
+                                  AutoGenerateColumns="False" IsReadOnly="False"
+                                  CanUserAddRows="False" CanUserDeleteRows="False"
+                                  SelectionMode="Single" GridLinesVisibility="Horizontal"
+                                  HeadersVisibility="Column"
+                                  Style="{DynamicResource MahApps.Styles.DataGrid}">
+                            <DataGrid.Columns>
+                                <DataGridCheckBoxColumn Header="✓" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="35" />
+                                <DataGridTextColumn Header="Key" Binding="{Binding Key}" Width="180" IsReadOnly="True" />
+                                <DataGridTextColumn Header="English Value" Binding="{Binding AnchorValue}" Width="190" IsReadOnly="True" />
+                                <DataGridTextColumn Header="Language" Binding="{Binding TargetCultureCode}" Width="90" IsReadOnly="True" />
+                                <DataGridTextColumn Header="Translated" Binding="{Binding TranslatedValue}" Width="*" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource MahApps.Styles.TextBlock}">
+                                            <Setter Property="Foreground" Value="Green" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </GroupBox>
+            </Grid>
         </Grid>
-    </Grid>
-</Window>
+    </DockPanel>
+</mah:MetroWindow>
